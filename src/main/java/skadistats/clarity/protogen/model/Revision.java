@@ -19,4 +19,11 @@ public class Revision {
         protobufDefinitionList.add(protobufDefinition);
     }
 
+    public List<ProtobufDefinition> getProtobufDefinitionList() {
+        return protobufDefinitionList;
+    }
+
+    public ObjectId getId() {
+        return id;
+    }
 }

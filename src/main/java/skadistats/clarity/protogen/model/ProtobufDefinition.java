@@ -4,6 +4,8 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class ProtobufDefinition {
@@ -22,4 +24,12 @@ public class ProtobufDefinition {
     }
 
 
+    public String getName() {
+        return name;
+    }
+
+    public void writeToFile(Repository repo, File out) throws IOException {
+        ObjectLoader loader = repo.open(id);
+        loader.copyTo(new FileOutputStream(out));
+    }
 }
