@@ -133,7 +133,8 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        parseFile("./dump/316/demo.proto");
+        //parseFile("./dump/316/demo.proto");
+        parseFile("./dump/316/dota_usermessages.proto");
         if (true) return;
 
         readRevisions();

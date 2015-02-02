@@ -1,12 +1,17 @@
 package skadistats.clarity.protogen.parser.model;
 
-import org.parboiled.trees.MutableTreeNodeImpl;
+public class Import extends Node {
 
-public class Import extends MutableTreeNodeImpl<Import> {
+    private final StringLiteral importedFile;
 
-    private final String importedFile;
-
-    public Import(String importedFile) {
+    public Import(StringLiteral importedFile) {
         this.importedFile = importedFile;
+    }
+
+    @Override
+    public String toString() {
+        return "Import{" +
+            "importedFile=" + importedFile +
+            '}';
     }
 }
