@@ -1,4 +1,4 @@
-package skadistats.clarity.protogen.model;
+package skadistats.clarity.protogen;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;

@@ -11,11 +11,12 @@ import org.parboiled.Parboiled;
 import org.parboiled.errors.ParseError;
 import org.parboiled.parserunners.ReportingParseRunner;
 import org.parboiled.support.ParsingResult;
-import skadistats.clarity.protogen.model.ProtobufDefinition;
-import skadistats.clarity.protogen.model.Revision;
+import skadistats.clarity.protogen.parser.ProtobufParser;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -109,10 +110,36 @@ public class Main {
     }
 
 
+    private static void parseFile(String fileName) throws IOException {
+//        TracingParseRunner<Object> runner = new TracingParseRunner<Object>(p.Proto()).withFilter(
+//            and(
+//                not(rulesBelow(p.Ident())),
+//                not(rulesBelow(p.StrLit())),
+//                not(rulesBelow(p.FloatLit())),
+//                not(rulesBelow(p.BoolLit())),
+//                not(rulesBelow(p.WS())),
+//                not(rulesBelow(p.WSR()))
+//            )
+//        );
+
+            ReportingParseRunner<Object> runner = new ReportingParseRunner<Object>(PROTO_PARSER.Proto());
+            ParsingResult<Object> result = runner.run(new String(Files.readAllBytes(Paths.get(fileName))));
+            System.out.format("%s - %s\n", runner.getParseErrors().size(), fileName);
+            for (ParseError error : runner.getParseErrors()) {
+                System.out.println(error.getErrorMessage());
+            }
+            //System.out.println("done, here are the nodes:");
+            //System.out.println(ParseTreeUtils.printNodeTree(result));
+    }
+
     public static void main(String[] args) throws Exception {
+        parseFile("./dump/316/demo.proto");
+        if (true) return;
+
         readRevisions();
         for (int i = REVISIONS.size() - 1; i >= 0 ; i--) {
             parseRevision(REVISIONS.size() - i - 1, REVISIONS.get(i));
         }
     }
+
 }
