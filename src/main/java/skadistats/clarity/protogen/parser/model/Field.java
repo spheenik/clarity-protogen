@@ -1,5 +1,7 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.parser.ProtoWriter;
+
 public class Field extends Node {
     private final StringLiteral modifier;
     private final Node type;
@@ -22,4 +24,25 @@ public class Field extends Node {
             ", name=" + name +
             '}';
     }
+
+    @Override
+    public void outputProto(ProtoWriter w) {
+        w.write(modifier.getValue());
+        w.write(' ');
+        type.outputProto(w);
+        w.write(' ');
+        name.outputProto(w);
+        w.write(" = ");
+        index.outputProto(w);
+        if (children.size() > 0) {
+            w.write(" [");
+            for (Node c : children) {
+                c.outputProto(w);
+            }
+            w.write(']');
+        }
+        w.write(';');
+        w.nextLine();
+    }
+
 }

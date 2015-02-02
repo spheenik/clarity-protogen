@@ -1,5 +1,7 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.parser.ProtoWriter;
+
 public class Default extends Node {
 
     private final Node value;
@@ -7,4 +9,11 @@ public class Default extends Node {
     public Default(Node value) {
         this.value = value;
     }
+
+    @Override
+    public void outputProto(ProtoWriter w) {
+        w.write("default = ");
+        value.outputProto(w);
+    }
+
 }

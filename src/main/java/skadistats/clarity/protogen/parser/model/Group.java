@@ -1,5 +1,7 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.parser.ProtoWriter;
+
 public class Group extends Node {
 
     private final StringLiteral modifier;
@@ -11,4 +13,10 @@ public class Group extends Node {
         this.ident = ident;
         this.index = index;
     }
+
+    @Override
+    public void outputProto(ProtoWriter w) {
+        throw new RuntimeException("dunno how to render a " + this.getClass().getSimpleName());
+    }
+
 }

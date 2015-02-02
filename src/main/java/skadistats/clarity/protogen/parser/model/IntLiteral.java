@@ -1,5 +1,9 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.parser.ProtoWriter;
+
+import java.math.BigDecimal;
+
 public class IntLiteral extends Node {
 
     public static enum Type {
@@ -7,9 +11,9 @@ public class IntLiteral extends Node {
     }
 
     private final Type type;
-    private final int value;
+    private final BigDecimal value;
 
-    public IntLiteral(Type type, int value) {
+    public IntLiteral(Type type, BigDecimal value) {
         this.type = type;
         this.value = value;
     }
@@ -21,4 +25,10 @@ public class IntLiteral extends Node {
             ", value=" + value +
             '}';
     }
+
+    @Override
+    public void outputProto(ProtoWriter w) {
+        w.write(value.toString());
+    }
+
 }

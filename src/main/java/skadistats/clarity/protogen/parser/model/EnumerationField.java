@@ -1,5 +1,7 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.parser.ProtoWriter;
+
 public class EnumerationField extends Node {
 
     private final Ident name;
@@ -17,4 +19,14 @@ public class EnumerationField extends Node {
             ", value=" + value +
             '}';
     }
+
+    @Override
+    public void outputProto(ProtoWriter w) {
+        name.outputProto(w);
+        w.write(" = ");
+        value.outputProto(w);
+        w.write(';');
+        w.nextLine();
+    }
+
 }

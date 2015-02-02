@@ -11,10 +11,14 @@ import org.parboiled.Parboiled;
 import org.parboiled.errors.ParseError;
 import org.parboiled.parserunners.ReportingParseRunner;
 import org.parboiled.support.ParsingResult;
+import skadistats.clarity.protogen.parser.ProtoWriter;
 import skadistats.clarity.protogen.parser.ProtobufParser;
+import skadistats.clarity.protogen.parser.model.Node;
+import skadistats.clarity.protogen.parser.model.Protobuf;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -73,6 +77,37 @@ public class Main {
         revWalk.dispose();
     }
 
+    private static Protobuf parseFile(String fileName) throws IOException {
+//        TracingParseRunner<Object> runner = new TracingParseRunner<Object>(p.Proto()).withFilter(
+//            and(
+//                not(rulesBelow(p.Ident())),
+//                not(rulesBelow(p.StrLit())),
+//                not(rulesBelow(p.FloatLit())),
+//                not(rulesBelow(p.BoolLit())),
+//                not(rulesBelow(p.WS())),
+//                not(rulesBelow(p.WSR()))
+//            )
+//        );
+
+        ReportingParseRunner<Node> runner = new ReportingParseRunner<Node>(PROTO_PARSER.Proto());
+        ParsingResult<Node> result = runner.run(new String(Files.readAllBytes(Paths.get(fileName))));
+        System.out.format("%s %s - %s\n", runner.getParseErrors().size(), runner.getValueStack().size(), fileName);
+
+        Protobuf p = (Protobuf) runner.getValueStack().peek();
+
+        p.outputProto(new ProtoWriter(2, new PrintWriter(System.out)));
+
+        for (ParseError error : runner.getParseErrors()) {
+            System.out.println(error.getErrorMessage());
+        }
+
+        return (Protobuf) runner.getValueStack().peek();
+        //System.out.println("done, here are the nodes:");
+        //System.out.println(ParseTreeUtils.printNodeTree(result));
+    }
+
+
+
     private static void dumpRevision(int n, Revision r) throws IOException {
         File dir = new File("./dump/" + n);
         dir.mkdir();
@@ -84,63 +119,41 @@ public class Main {
     }
 
 
-    private static void parseRevision(int i, Revision r) throws IOException {
+    private static void parseRevision(Revision r) throws IOException {
         for (ProtobufDefinition def : r.getProtobufDefinitionList()) {
-
-//        TracingParseRunner<Object> runner = new TracingParseRunner<Object>(p.Proto()).withFilter(
-//            and(
-//                not(rulesBelow(p.Ident())),
-//                not(rulesBelow(p.StrLit())),
-//                not(rulesBelow(p.FloatLit())),
-//                not(rulesBelow(p.BoolLit())),
-//                not(rulesBelow(p.WS())),
-//                not(rulesBelow(p.WSR()))
-//            )
-//        );
-
-            ReportingParseRunner<Object> runner = new ReportingParseRunner<Object>(PROTO_PARSER.Proto());
-            ParsingResult<Object> result = runner.run(def.loadFromRepo(REPO));
-            System.out.format("%s - %s/%s\n", runner.getParseErrors().size(), i, def.getName());
-            for (ParseError error : runner.getParseErrors()) {
-                System.out.println(error.getErrorMessage());
+            ReportingParseRunner<Node> runner = new ReportingParseRunner<Node>(PROTO_PARSER.Proto());
+            ParsingResult<Node> result = runner.run(def.loadFromRepo(REPO));
+            if (!result.matched) {
+                for (ParseError error : runner.getParseErrors()) {
+                    System.out.println(error.getErrorMessage());
+                }
+                throw new IOException("errors while parsing protobuf-files.");
             }
-            //System.out.println("done, here are the nodes:");
-            //System.out.println(ParseTreeUtils.printNodeTree(result));
+            Protobuf buf = (Protobuf) result.valueStack.peek();
+            buf.setDefinition(def);
+            def.setProto(buf);
+            buf.outputProto(new ProtoWriter(2, new PrintWriter(System.out)));
         }
+
     }
 
 
-    private static void parseFile(String fileName) throws IOException {
-//        TracingParseRunner<Object> runner = new TracingParseRunner<Object>(p.Proto()).withFilter(
-//            and(
-//                not(rulesBelow(p.Ident())),
-//                not(rulesBelow(p.StrLit())),
-//                not(rulesBelow(p.FloatLit())),
-//                not(rulesBelow(p.BoolLit())),
-//                not(rulesBelow(p.WS())),
-//                not(rulesBelow(p.WSR()))
-//            )
-//        );
-
-            ReportingParseRunner<Object> runner = new ReportingParseRunner<Object>(PROTO_PARSER.Proto());
-            ParsingResult<Object> result = runner.run(new String(Files.readAllBytes(Paths.get(fileName))));
-            System.out.format("%s - %s\n", runner.getParseErrors().size(), fileName);
-            for (ParseError error : runner.getParseErrors()) {
-                System.out.println(error.getErrorMessage());
-            }
-            //System.out.println("done, here are the nodes:");
-            //System.out.println(ParseTreeUtils.printNodeTree(result));
+    private static void dumpAllRevisions() throws IOException {
+        for (int i = REVISIONS.size() - 1; i >= 0 ; i--) {
+            dumpRevision(REVISIONS.size() - i - 1, REVISIONS.get(i));
+        }
     }
 
     public static void main(String[] args) throws Exception {
-        //parseFile("./dump/316/demo.proto");
-        parseFile("./dump/316/dota_usermessages.proto");
-        if (true) return;
-
         readRevisions();
-        for (int i = REVISIONS.size() - 1; i >= 0 ; i--) {
-            parseRevision(REVISIONS.size() - i - 1, REVISIONS.get(i));
-        }
+
+        //dumpAllRevisions();
+        //parseFile("./dump/316/demo.proto");
+        //Protobuf buf = parseFile("./dump/316/dota_usermessages.proto");
+        //System.out.println(buf.getAllMessages().size());
+
+        parseRevision(REVISIONS.get(0));
+
     }
 
 }

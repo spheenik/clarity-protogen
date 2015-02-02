@@ -8,6 +8,8 @@ import org.parboiled.annotations.SuppressSubnodes;
 import skadistats.clarity.protogen.parser.model.*;
 import skadistats.clarity.protogen.parser.model.Package;
 
+import java.math.BigDecimal;
+
 @BuildParseTree
 public class ProtobufParser extends BaseParser<Node> {
 
@@ -213,21 +215,27 @@ public class ProtobufParser extends BaseParser<Node> {
     Rule DecInt() {
         return Sequence(
             Sequence(Optional(AnyOf("+-")), OneOrMore(CharRange('0', '9'))),
-            push(new IntLiteral(IntLiteral.Type.DEC, Integer.valueOf(match())))
+            push(new IntLiteral(IntLiteral.Type.DEC, new BigDecimal(match())))
         );
     }
 
     Rule HexInt() {
         return Sequence(
-            Sequence('0', AnyOf("xX"), OneOrMore(FirstOf(CharRange('A', 'F'), CharRange('a', 'f'), CharRange('0', '9')))),
-            push(new IntLiteral(IntLiteral.Type.HEX, 0))
+            '0', AnyOf("xX"),
+            Sequence(
+                OneOrMore(FirstOf(CharRange('A', 'F'), CharRange('a', 'f'), CharRange('0', '9'))),
+                push(new IntLiteral(IntLiteral.Type.HEX, BigDecimal.valueOf(Long.valueOf(match(), 16))))
+            )
         );
     }
 
     Rule OctInt() {
         return Sequence(
-            Sequence('0', OneOrMore(CharRange('0', '7'))),
-            push(new IntLiteral(IntLiteral.Type.OCT, 0))
+            '0',
+            Sequence(
+                OneOrMore(CharRange('0', '7')),
+                push(new IntLiteral(IntLiteral.Type.OCT, BigDecimal.valueOf(Long.valueOf(match(), 8))))
+            )
         );
     }
 

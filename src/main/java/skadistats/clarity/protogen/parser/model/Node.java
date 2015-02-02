@@ -1,17 +1,19 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.parser.ProtoWriter;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class Node {
+public abstract class Node {
 
     private Node parent;
-    private List<Node> children = new ArrayList<Node>();
+    protected List<Node> children = new ArrayList<Node>();
 
     public boolean addChild(Node child) {
         child.setParent(this);
         children.add(child);
-        System.out.format("added a %s to %s\n", child.getClass().getSimpleName(), this.getClass().getSimpleName());
+        //System.out.format("added a %s to %s\n", child.getClass().getSimpleName(), this.getClass().getSimpleName());
         return true;
     }
 
@@ -22,5 +24,7 @@ public class Node {
     public void setParent(Node parent) {
         this.parent = parent;
     }
+
+    abstract public void outputProto(ProtoWriter w);
 
 }

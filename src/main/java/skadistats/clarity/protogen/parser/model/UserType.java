@@ -1,6 +1,9 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.parser.ProtoWriter;
+
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class UserType extends Node {
@@ -24,4 +27,17 @@ public class UserType extends Node {
             ", prefix='" + prefix + '\'' +
             '}';
     }
+
+    @Override
+    public void outputProto(ProtoWriter w) {
+        w.write(prefix);
+        Iterator<Ident> iterator = pathNodes.iterator();
+        while (iterator.hasNext()) {
+            iterator.next().outputProto(w);
+            if (iterator.hasNext()) {
+                w.write(".");
+            }
+        }
+    }
+
 }

@@ -1,16 +1,13 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.parser.ProtoWriter;
+
 public class Ident extends Node {
 
     private String name;
 
     public Ident(String name) {
         this.name = name;
-    }
-
-    public boolean append(String suffix) {
-        this.name = this.name.concat(suffix);
-        return true;
     }
 
     public String getName() {
@@ -23,4 +20,10 @@ public class Ident extends Node {
             "name='" + name + '\'' +
             '}';
     }
+
+    @Override
+    public void outputProto(ProtoWriter w) {
+        w.write(name);
+    }
+
 }
