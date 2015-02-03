@@ -3,20 +3,20 @@ package skadistats.clarity.protogen;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
-import skadistats.clarity.protogen.parser.model.Protobuf;
+import skadistats.clarity.protogen.parser.model.ProtoTree;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class ProtobufDefinition {
+public class ProtoFile extends Node {
 
-    private final String name;
+    private final String fileName;
     private final ObjectId id;
-    private Protobuf proto;
+    private ProtoTree protoTree;
 
-    public ProtobufDefinition(String name, ObjectId id) {
-        this.name = name;
+    public ProtoFile(String fileName, ObjectId id) {
+        this.fileName = fileName;
         this.id = id;
     }
 
@@ -25,21 +25,21 @@ public class ProtobufDefinition {
         return new String(loader.getBytes());
     }
 
-
-    public String getName() {
-        return name;
-    }
-
     public void writeToFile(Repository repo, File out) throws IOException {
         ObjectLoader loader = repo.open(id);
         loader.copyTo(new FileOutputStream(out));
     }
 
-    public Protobuf getProto() {
-        return proto;
+    public String getFileName() {
+        return fileName;
     }
 
-    public void setProto(Protobuf proto) {
-        this.proto = proto;
+    public ProtoTree getProtoTree() {
+        return protoTree;
     }
+
+    public void setProtoTree(ProtoTree protoTree) {
+        this.protoTree = protoTree;
+    }
+
 }

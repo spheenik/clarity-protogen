@@ -1,6 +1,6 @@
 package skadistats.clarity.protogen.parser.model;
 
-import skadistats.clarity.protogen.parser.ProtoWriter;
+import skadistats.clarity.protogen.Node;
 
 public class Extensions extends Node {
     private final Node from;
@@ -9,11 +9,6 @@ public class Extensions extends Node {
     public Extensions(Node from, Node to) {
         this.from = from;
         this.to = to;
-    }
-
-    @Override
-    public void outputProto(ProtoWriter w) {
-        throw new RuntimeException("dunno how to render a " + this.getClass().getSimpleName());
     }
 
 }

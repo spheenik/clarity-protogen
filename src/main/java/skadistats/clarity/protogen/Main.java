@@ -10,11 +10,12 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.parboiled.Parboiled;
 import org.parboiled.errors.ParseError;
 import org.parboiled.parserunners.ReportingParseRunner;
+import org.parboiled.parserunners.TracingParseRunner;
+import org.parboiled.support.ParseTreeUtils;
 import org.parboiled.support.ParsingResult;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 import skadistats.clarity.protogen.parser.ProtobufParser;
-import skadistats.clarity.protogen.parser.model.Node;
-import skadistats.clarity.protogen.parser.model.Protobuf;
+import skadistats.clarity.protogen.parser.model.ProtoTree;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +26,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+
+import static org.parboiled.common.Predicates.and;
+import static org.parboiled.common.Predicates.not;
+import static org.parboiled.support.Filters.rulesBelow;
 
 public class Main {
 
@@ -70,73 +75,72 @@ public class Main {
             treeWalk.setFilter(PathFilter.create(PATH));
             while (treeWalk.next()) {
                 //System.out.format("--- %s\n", treeWalk.getNameString());
-                r.addProto(new ProtobufDefinition(treeWalk.getNameString(), treeWalk.getObjectId(0)));
+                if (!treeWalk.getNameString().endsWith(".proto")) {
+                    continue;
+                }
+                r.addChild(new ProtoFile(treeWalk.getNameString(), treeWalk.getObjectId(0)));
             }
             REVISIONS.add(r);
         }
         revWalk.dispose();
     }
 
-    private static Protobuf parseFile(String fileName) throws IOException {
-//        TracingParseRunner<Object> runner = new TracingParseRunner<Object>(p.Proto()).withFilter(
-//            and(
-//                not(rulesBelow(p.Ident())),
-//                not(rulesBelow(p.StrLit())),
-//                not(rulesBelow(p.FloatLit())),
-//                not(rulesBelow(p.BoolLit())),
-//                not(rulesBelow(p.WS())),
-//                not(rulesBelow(p.WSR()))
-//            )
-//        );
-
+    private static ProtoTree parseFile(String fileName) throws IOException {
         ReportingParseRunner<Node> runner = new ReportingParseRunner<Node>(PROTO_PARSER.Proto());
         ParsingResult<Node> result = runner.run(new String(Files.readAllBytes(Paths.get(fileName))));
         System.out.format("%s %s - %s\n", runner.getParseErrors().size(), runner.getValueStack().size(), fileName);
 
-        Protobuf p = (Protobuf) runner.getValueStack().peek();
+        ProtoTree p = (ProtoTree) runner.getValueStack().peek();
 
-        p.outputProto(new ProtoWriter(2, new PrintWriter(System.out)));
+        p.writeToProtoWriter(new ProtoWriter(2, new PrintWriter(System.out)));
 
         for (ParseError error : runner.getParseErrors()) {
             System.out.println(error.getErrorMessage());
         }
 
-        return (Protobuf) runner.getValueStack().peek();
-        //System.out.println("done, here are the nodes:");
-        //System.out.println(ParseTreeUtils.printNodeTree(result));
+        return (ProtoTree) runner.getValueStack().peek();
     }
-
-
 
     private static void dumpRevision(int n, Revision r) throws IOException {
         File dir = new File("./dump/" + n);
         dir.mkdir();
         System.out.println(dir.getPath());
-        for (ProtobufDefinition def : r.getProtobufDefinitionList()) {
-            File out = new File(dir.getPath() + "/" + def.getName());
+        for (ProtoFile def : r.getChildren(ProtoFile.class)) {
+            File out = new File(dir.getPath() + "/" + def.getFileName());
             def.writeToFile(REPO, out);
         }
     }
 
-
     private static void parseRevision(Revision r) throws IOException {
-        for (ProtobufDefinition def : r.getProtobufDefinitionList()) {
+        for (ProtoFile def : r.getChildren(ProtoFile.class)) {
             ReportingParseRunner<Node> runner = new ReportingParseRunner<Node>(PROTO_PARSER.Proto());
+
+
+            System.out.println("- RUNNING " + def.getFileName());
             ParsingResult<Node> result = runner.run(def.loadFromRepo(REPO));
             if (!result.matched) {
-                for (ParseError error : runner.getParseErrors()) {
-                    System.out.println(error.getErrorMessage());
-                }
-                throw new IOException("errors while parsing protobuf-files.");
+                TracingParseRunner<Node> traceRunner = new TracingParseRunner<Node>(PROTO_PARSER.Proto()).withFilter(
+                    and(
+                        not(rulesBelow(PROTO_PARSER.Ident())),
+                        not(rulesBelow(PROTO_PARSER.StringLiteral())),
+                        not(rulesBelow(PROTO_PARSER.FloatLiteral())),
+                        not(rulesBelow(PROTO_PARSER.BoolLiteral())),
+                        not(rulesBelow(PROTO_PARSER.WS())),
+                        not(rulesBelow(PROTO_PARSER.WSR()))
+                    )
+                );
+                ParsingResult<Node> traceResult = traceRunner.run(def.loadFromRepo(REPO));
+                ParseTreeUtils.printNodeTree(traceResult);
+                throw new IOException("errors wh¡ile parsing " + def.getFileName());
+            } else {
+                ProtoTree buf = (ProtoTree) result.valueStack.peek();
+                buf.setProtoFile(def);
+                def.setProtoTree(buf);
+                buf.writeToProtoWriter(new ProtoWriter(2, new PrintWriter(System.out)));
             }
-            Protobuf buf = (Protobuf) result.valueStack.peek();
-            buf.setDefinition(def);
-            def.setProto(buf);
-            buf.outputProto(new ProtoWriter(2, new PrintWriter(System.out)));
         }
 
     }
-
 
     private static void dumpAllRevisions() throws IOException {
         for (int i = REVISIONS.size() - 1; i >= 0 ; i--) {
@@ -147,12 +151,21 @@ public class Main {
     public static void main(String[] args) throws Exception {
         readRevisions();
 
+        Revision r = REVISIONS.get(0);
+        parseRevision(r);
+        for (ProtoFile def : r.getChildren(ProtoFile.class)) {
+            System.out.println(def.getFileName() + " - " + def.getProtoTree().getAllMessages().size());
+        }
+
+
+
+
+
         //dumpAllRevisions();
         //parseFile("./dump/316/demo.proto");
         //Protobuf buf = parseFile("./dump/316/dota_usermessages.proto");
         //System.out.println(buf.getAllMessages().size());
 
-        parseRevision(REVISIONS.get(0));
 
     }
 

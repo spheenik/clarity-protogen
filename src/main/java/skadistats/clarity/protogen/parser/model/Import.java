@@ -1,5 +1,6 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.Node;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 
 public class Import extends Node {
@@ -18,9 +19,9 @@ public class Import extends Node {
     }
 
     @Override
-    public void outputProto(ProtoWriter w) {
+    public void writeToProtoWriter(ProtoWriter w) {
         w.write("import ");
-        importedFile.outputProto(w);
+        importedFile.writeToProtoWriter(w);
         w.write(';');
         w.nextLine();
     }

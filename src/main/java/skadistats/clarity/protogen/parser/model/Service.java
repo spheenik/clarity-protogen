@@ -3,18 +3,18 @@ package skadistats.clarity.protogen.parser.model;
 import skadistats.clarity.protogen.Node;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 
-public class Extend extends Node {
+public class Service extends Node {
 
-    private final UserType type;
+    private final Ident name;
 
-    public Extend(UserType type) {
-        this.type = type;
+    public Service(Ident name) {
+        this.name = name;
     }
 
     @Override
     public void writeToProtoWriter(ProtoWriter w) {
-        w.write("extend ");
-        type.writeToProtoWriter(w);
+        w.write("service ");
+        name.writeToProtoWriter(w);
         w.write(" {");
         w.nextLine();
         w.increaseIndent();
@@ -25,5 +25,6 @@ public class Extend extends Node {
         w.write('}');
         w.nextLine();
     }
+
 
 }

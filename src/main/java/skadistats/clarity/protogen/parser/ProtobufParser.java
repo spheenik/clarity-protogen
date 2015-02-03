@@ -5,6 +5,7 @@ import org.parboiled.Rule;
 import org.parboiled.annotations.BuildParseTree;
 import org.parboiled.annotations.SuppressNode;
 import org.parboiled.annotations.SuppressSubnodes;
+import skadistats.clarity.protogen.Node;
 import skadistats.clarity.protogen.parser.model.*;
 import skadistats.clarity.protogen.parser.model.Package;
 
@@ -15,7 +16,7 @@ public class ProtobufParser extends BaseParser<Node> {
 
     public Rule Proto() {
         return Sequence(
-            push(new Protobuf()),
+            push(new ProtoTree()),
             WS(),
             ZeroOrMore(
                 FirstOf(
@@ -26,59 +27,94 @@ public class ProtobufParser extends BaseParser<Node> {
                             Extend(),
                             Enum(),
                             Package(),
-                            Option()
+                            Option(),
+                            Service()
                         ),
                         peek(1).addChild(pop())
                     ),
                     ';'
                 ), WS()
             ),
-            WS()
+            WS(),
+            EOI
         );
     }
 
-    Rule Import() {
+    public Rule Import() {
         return Sequence(
-            "import", WS(), StrLit(), WS(), ';',
+            "import", WS(), StringLiteral(), WS(), ';',
             push(new Import((StringLiteral) pop()))
         );
     }
 
-    Rule Package() {
+    public Rule Package() {
         return Sequence(
             "package", WS(), Ident(), WS(), ';',
             push(new Package((StringLiteral) pop()))
         );
     }
 
-    Rule Option() {
+    public Rule Option() {
         return Sequence(
             "option", WS(), OptionBody(), WS(), ';',
             push(new Option((OptionBody) pop()))
         );
     }
 
-    Rule OptionBody() {
+    public Rule OptionBody() {
         return Sequence(
-            Ident(),
-            ZeroOrMore(
-                Sequence('.', Ident()),
-                push(new Ident(((Ident) pop()).getName().concat(match())))
+            FirstOf(
+                Ident(),
+                Sequence('(', push(new CustomOptionIdent()), QualifiedIdent(), ')', peek(1).addChildren(pop().getChildren()))
             ),
             WS(), '=', WS(), Constant(),
-            push(new OptionBody((Ident) pop(1), pop()))
+            push(new OptionBody(pop(1), pop()))
         );
     }
 
-    Rule Message() {
-        return Sequence("message", WS(), Ident(), WS(), push(new Message((Ident) pop())), MessageBody());
+    public Rule Message() {
+        return Sequence("message", WSR(), Ident(), WS(), push(new Message((Ident) pop())), MessageBody());
     }
 
-    Rule Extend() {
+    public Rule Service() {
+        return Sequence(
+            "service", WSR(), Ident(), WS(), push(new Service((Ident) pop())), WS(),
+            '{', WS(),
+            ZeroOrMore(
+                FirstOf(
+                    Sequence(Option(), peek(1).addChild(pop())),
+                    Sequence(Rpc(), peek(1).addChild(pop())),
+                    ';'
+                ), WS()
+            ),
+            '}'
+        );
+    }
+
+    public Rule Rpc() {
+        return Sequence(
+            "rpc", WSR(), Ident(), WS(), '(', WS(), UserType(), WS(), ')', WS(), "returns", WS(), "(", WS(), UserType(), WS(), ')', WS(),
+            push(new Rpc((Ident)pop(2), (UserType)pop(1), (UserType)pop())),
+            FirstOf(
+                Sequence(
+                    '{',
+                    ZeroOrMore(
+                        WS(),
+                        Sequence(Option(), peek(1).addChild(pop()))
+                    ),
+                    WS(),
+                    '}'
+                ),
+                ';'
+            )
+        );
+    }
+
+    public Rule Extend() {
         return Sequence("extend", WS(), UserType(), WS(), push(new Extend((UserType)pop())), MessageBody());
     }
 
-    Rule Enum() {
+    public Rule Enum() {
         return Sequence(
             "enum", WSR(),
             Ident(), push(new Enumeration((Ident) pop())),
@@ -95,14 +131,18 @@ public class ProtobufParser extends BaseParser<Node> {
         );
     }
 
-    Rule EnumField() {
+    public Rule EnumField() {
         return Sequence(
-            Ident(), WS(), '=', WS(), IntLit(), WS(), ';',
+            Ident(), WS(), '=', WS(), IntLiteral(), WS(),
+            Optional(
+                '[', WS(), OptionBody(), peek(1).addChild(pop()), WS(), ZeroOrMore(',', WS(), OptionBody(), peek(1).addChild(pop()), WS()), ']'
+            ),
+            ';',
             push(new EnumerationField((Ident) pop(1), (IntLiteral) pop()))
         );
     }
 
-    Rule MessageBody() {
+    public Rule MessageBody() {
         return Sequence(
             '{', WS(),
             ZeroOrMore(
@@ -119,17 +159,17 @@ public class ProtobufParser extends BaseParser<Node> {
         );
     }
 
-    Rule Group() {
+    public Rule Group() {
         return Sequence(
-            Modifier(), WSR(), "group", WSR(), CamelIdent(), WS(), '=', WS(), IntLit(), WS(),
+            Modifier(), WSR(), "group", WSR(), CamelIdent(), WS(), '=', WS(), IntLiteral(), WS(),
             push(new Group((StringLiteral)pop(2), (Ident)pop(1), (IntLiteral)pop(0))),
             MessageBody()
         );
     }
 
-    Rule Field() {
+    public Rule Field() {
         return Sequence(
-            Modifier(), WSR(), Type(), WSR(), Ident(), WS(), '=', WS(), IntLit(), WS(),
+            Modifier(), WSR(), Type(), WSR(), Ident(), WS(), '=', WS(), IntLiteral(), WS(),
             push(new Field((StringLiteral)pop(3), pop(2), (Ident)pop(1), (IntLiteral) pop(0))),
             Optional(
                 '[', WS(), FieldOption(), peek(1).addChild(pop()), WS(), ZeroOrMore(',', WS(), FieldOption(), peek(1).addChild(pop()), WS()), ']'
@@ -138,19 +178,19 @@ public class ProtobufParser extends BaseParser<Node> {
         );
     }
 
-    Rule FieldOption() {
+    public Rule FieldOption() {
         return FirstOf(
             Sequence("default", WS(), '=', WS(), Constant(), push(new Default(pop()))),
             OptionBody()
         );
     }
 
-    Rule Extensions() {
-        return Sequence("extensions", IntLit(), "to", FirstOf(IntLit(), Sequence("max", push(new StringLiteral(match())))), push(new Extensions(pop(1), pop())), ';');
+    public Rule Extensions() {
+        return Sequence("extensions", IntLiteral(), "to", FirstOf(IntLiteral(), Sequence("max", push(new StringLiteral(match())))), push(new Extensions(pop(1), pop())), ';');
     }
 
     @SuppressSubnodes
-    Rule Modifier() {
+    public Rule Modifier() {
         return Sequence(
             FirstOf("required", "optional", "repeated"),
             push(new StringLiteral(match()))
@@ -158,7 +198,7 @@ public class ProtobufParser extends BaseParser<Node> {
     }
 
     @SuppressSubnodes
-    Rule Type() {
+    public Rule Type() {
         return FirstOf(
             Sequence(
                 FirstOf("double", "float", "int32", "int64", "uint32", "uint64", "sint32", "sint64", "fixed32", "fixed64", "sfixed32", "sfixed64", "bool", "string", "bytes"),
@@ -169,21 +209,31 @@ public class ProtobufParser extends BaseParser<Node> {
     }
 
     @SuppressSubnodes
-    Rule UserType() {
+    public Rule UserType() {
         return Sequence(
-            Sequence(Optional('.'), push(new UserType(match()))),
-            Ident(), ((UserType)peek(1)).addPathNode((Ident)pop()),
-            ZeroOrMore('.', Ident(), ((UserType)peek(1)).addPathNode((Ident) pop()))
+            Optional('.'),
+            push(new UserType(match())),
+            QualifiedIdent(),
+            peek(1).addChildren(pop().getChildren())
         );
     }
 
     @SuppressSubnodes
-    Rule Constant() {
-        return FirstOf(Ident(), IntLit(), FloatLit(), StrLit(), BoolLit());
+    public Rule Constant() {
+        return FirstOf(Ident(), IntLiteral(), FloatLiteral(), StringLiteral(), BoolLiteral());
     }
 
     @SuppressSubnodes
-    Rule Ident() {
+    public Rule QualifiedIdent() {
+        return Sequence(
+            push(new QualifiedIdent()),
+            Ident(), peek(1).addChild(pop()),
+            ZeroOrMore('.', Ident(), peek(1).addChild(pop()))
+        );
+    }
+
+    @SuppressSubnodes
+    public Rule Ident() {
         return Sequence(
             Sequence(
                 FirstOf(CharRange('A', 'Z'), CharRange('a', 'z'), '_'),
@@ -194,7 +244,7 @@ public class ProtobufParser extends BaseParser<Node> {
     }
 
     @SuppressSubnodes
-    Rule CamelIdent() {
+    public Rule CamelIdent() {
         return Sequence(
             Sequence(
                 CharRange('A', 'Z'),
@@ -205,21 +255,21 @@ public class ProtobufParser extends BaseParser<Node> {
     }
 
     @SuppressSubnodes
-    Rule IntLit() {
+    public Rule IntLiteral() {
         return Sequence(
             FirstOf(DecInt(), HexInt(), OctInt()),
             TestNot('.')
         );
     }
 
-    Rule DecInt() {
+    public Rule DecInt() {
         return Sequence(
             Sequence(Optional(AnyOf("+-")), OneOrMore(CharRange('0', '9'))),
             push(new IntLiteral(IntLiteral.Type.DEC, new BigDecimal(match())))
         );
     }
 
-    Rule HexInt() {
+    public Rule HexInt() {
         return Sequence(
             '0', AnyOf("xX"),
             Sequence(
@@ -229,7 +279,7 @@ public class ProtobufParser extends BaseParser<Node> {
         );
     }
 
-    Rule OctInt() {
+    public Rule OctInt() {
         return Sequence(
             '0',
             Sequence(
@@ -240,7 +290,7 @@ public class ProtobufParser extends BaseParser<Node> {
     }
 
     @SuppressSubnodes
-    Rule FloatLit() {
+    public Rule FloatLiteral() {
         return Sequence(
             Sequence(
                 OneOrMore(CharRange('0', '9')),
@@ -252,12 +302,12 @@ public class ProtobufParser extends BaseParser<Node> {
     }
 
     @SuppressSubnodes
-    Rule BoolLit() {
+    public Rule BoolLiteral() {
         return Sequence(FirstOf("true", "false"), push(new BoolLiteral(Boolean.valueOf(match()))));
     }
 
     @SuppressSubnodes
-    Rule StrLit() {
+    public Rule StringLiteral() {
         return Sequence(
             '"',
             ZeroOrMore(FirstOf(HexEscape(), OctEscape(), CharEscape(), Sequence(TestNot(AnyOf("\r\n\"\\")), ANY))).suppressSubnodes(),
@@ -266,7 +316,7 @@ public class ProtobufParser extends BaseParser<Node> {
         );
     }
 
-    Rule HexEscape() {
+    public Rule HexEscape() {
         return Sequence(
             '\\', AnyOf("xX"),
             FirstOf(CharRange('A', 'F'), CharRange('a', 'f'), CharRange('0', '9')),
@@ -274,7 +324,7 @@ public class ProtobufParser extends BaseParser<Node> {
         );
     }
 
-    Rule OctEscape() {
+    public Rule OctEscape() {
         return Sequence(
             '\\', Optional('0'),
             CharRange('0', '7'),
@@ -283,17 +333,17 @@ public class ProtobufParser extends BaseParser<Node> {
         );
     }
 
-    Rule CharEscape() {
+    public Rule CharEscape() {
         return Sequence('\\', AnyOf("abfnrtv\\?\""));
     }
 
     @SuppressNode
-    Rule WS() {
+    public Rule WS() {
         return ZeroOrMore(AnyOf(" \t\f\r\n"));
     }
 
     @SuppressNode
-    Rule WSR() {
+    public Rule WSR() {
         return OneOrMore(AnyOf(" \t\f\r\n"));
     }
 

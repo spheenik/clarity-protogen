@@ -1,5 +1,6 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.Node;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 
 public class Option extends Node {
@@ -11,9 +12,9 @@ public class Option extends Node {
     }
 
     @Override
-    public void outputProto(ProtoWriter w) {
+    public void writeToProtoWriter(ProtoWriter w) {
         w.write("option ");
-        body.outputProto(w);
+        body.writeToProtoWriter(w);
         w.write(';');
         w.nextLine();
     }

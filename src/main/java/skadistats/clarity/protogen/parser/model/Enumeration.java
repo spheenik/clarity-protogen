@@ -1,5 +1,6 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.Node;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 
 public class Enumeration extends Node {
@@ -18,14 +19,14 @@ public class Enumeration extends Node {
     }
 
     @Override
-    public void outputProto(ProtoWriter w) {
+    public void writeToProtoWriter(ProtoWriter w) {
         w.write("enum ");
-        name.outputProto(w);
+        name.writeToProtoWriter(w);
         w.write(" {");
         w.nextLine();
         w.increaseIndent();
         for (Node c : children) {
-            c.outputProto(w);
+            c.writeToProtoWriter(w);
         }
         w.decreaseIndent();
         w.write('}');

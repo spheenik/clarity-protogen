@@ -1,5 +1,6 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.Node;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 
 public class Field extends Node {
@@ -26,18 +27,18 @@ public class Field extends Node {
     }
 
     @Override
-    public void outputProto(ProtoWriter w) {
+    public void writeToProtoWriter(ProtoWriter w) {
         w.write(modifier.getValue());
         w.write(' ');
-        type.outputProto(w);
+        type.writeToProtoWriter(w);
         w.write(' ');
-        name.outputProto(w);
+        name.writeToProtoWriter(w);
         w.write(" = ");
-        index.outputProto(w);
+        index.writeToProtoWriter(w);
         if (children.size() > 0) {
             w.write(" [");
             for (Node c : children) {
-                c.outputProto(w);
+                c.writeToProtoWriter(w);
             }
             w.write(']');
         }

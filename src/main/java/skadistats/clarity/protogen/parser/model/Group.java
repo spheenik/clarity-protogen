@@ -1,6 +1,6 @@
 package skadistats.clarity.protogen.parser.model;
 
-import skadistats.clarity.protogen.parser.ProtoWriter;
+import skadistats.clarity.protogen.Node;
 
 public class Group extends Node {
 
@@ -12,11 +12,6 @@ public class Group extends Node {
         this.modifier = modifier;
         this.ident = ident;
         this.index = index;
-    }
-
-    @Override
-    public void outputProto(ProtoWriter w) {
-        throw new RuntimeException("dunno how to render a " + this.getClass().getSimpleName());
     }
 
 }

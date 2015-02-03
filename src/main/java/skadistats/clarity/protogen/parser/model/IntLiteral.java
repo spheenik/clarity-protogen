@@ -1,5 +1,6 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.Node;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 
 import java.math.BigDecimal;
@@ -27,7 +28,7 @@ public class IntLiteral extends Node {
     }
 
     @Override
-    public void outputProto(ProtoWriter w) {
+    public void writeToProtoWriter(ProtoWriter w) {
         w.write(value.toString());
     }
 

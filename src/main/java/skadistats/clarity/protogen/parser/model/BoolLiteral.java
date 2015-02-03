@@ -1,5 +1,6 @@
 package skadistats.clarity.protogen.parser.model;
 
+import skadistats.clarity.protogen.Node;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 
 public class BoolLiteral extends Node {
@@ -10,7 +11,7 @@ public class BoolLiteral extends Node {
     }
 
     @Override
-    public void outputProto(ProtoWriter w) {
-        throw new RuntimeException("dunno how to render a " + this.getClass().getSimpleName());
+    public void writeToProtoWriter(ProtoWriter w) {
+        w.write(String.valueOf(value));
     }
 }

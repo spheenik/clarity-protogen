@@ -1,14 +1,15 @@
 package skadistats.clarity.protogen.parser.model;
 
-import skadistats.clarity.protogen.ProtobufDefinition;
+import skadistats.clarity.protogen.Node;
+import skadistats.clarity.protogen.ProtoFile;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Protobuf extends Node {
+public class ProtoTree extends Node {
 
-    private ProtobufDefinition definition;
+    private ProtoFile protoFile;
 
     @Override
     public String toString() {
@@ -16,9 +17,9 @@ public class Protobuf extends Node {
     }
 
     @Override
-    public void outputProto(ProtoWriter w) {
+    public void writeToProtoWriter(ProtoWriter w) {
         for (Node c : children) {
-            c.outputProto(w);
+            c.writeToProtoWriter(w);
         }
     }
 
@@ -29,7 +30,7 @@ public class Protobuf extends Node {
     }
 
     public void getAllMessagesInternal(Node node, Map<String, Message> messages) {
-        for (Node child : node.children) {
+        for (Node child : node.getChildren()) {
             if (child instanceof Message) {
                 Message m = (Message) child;
                 messages.put(m.getFullName(), m);
@@ -38,11 +39,11 @@ public class Protobuf extends Node {
         }
     }
 
-    public ProtobufDefinition getDefinition() {
-        return definition;
+    public ProtoFile getProtoFile() {
+        return protoFile;
     }
 
-    public void setDefinition(ProtobufDefinition definition) {
-        this.definition = definition;
+    public void setProtoFile(ProtoFile protoFile) {
+        this.protoFile = protoFile;
     }
 }

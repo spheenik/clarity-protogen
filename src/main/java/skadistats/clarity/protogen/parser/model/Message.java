@@ -1,6 +1,7 @@
 package skadistats.clarity.protogen.parser.model;
 
 import org.eclipse.jgit.util.StringUtils;
+import skadistats.clarity.protogen.Node;
 import skadistats.clarity.protogen.parser.ProtoWriter;
 
 import java.util.LinkedList;
@@ -27,14 +28,14 @@ public class Message extends Node {
     }
 
     @Override
-    public void outputProto(ProtoWriter w) {
+    public void writeToProtoWriter(ProtoWriter w) {
         w.write("message ");
-        name.outputProto(w);
+        name.writeToProtoWriter(w);
         w.write(" {");
         w.nextLine();
         w.increaseIndent();
         for (Node c : children) {
-            c.outputProto(w);
+            c.writeToProtoWriter(w);
         }
         w.decreaseIndent();
         w.write('}');
